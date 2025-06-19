@@ -1,0 +1,30 @@
+# direnv configuration for PROJECT_NAME
+# =====================================
+#
+# このファイルは direnv で自動的に環境変数を読み込むための設定です。
+# プロジェクトディレクトリに入ると自動的に環境変数が設定されます。
+#
+
+# .env ファイルから環境変数を読み込み
+dotenv
+
+# Python仮想環境の有効化 (Python プロジェクトの場合)
+# layout python
+
+# Node.js バージョン指定 (Node.js プロジェクトの場合)
+# use node 18
+
+# mise (rtx) の設定読み込み
+# eval "$(mise activate bash)"
+
+# パスの追加 (必要に応じて)
+# PATH_add bin
+# PATH_add scripts
+
+# 開発用のエイリアス設定
+# alias ll='ls -la'
+# alias ..='cd ..'
+
+# プロジェクト固有の設定
+# export PROJECT_ROOT=$(pwd)
+# export LOG_DIR="$PROJECT_ROOT/logs"

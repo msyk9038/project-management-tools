@@ -1,0 +1,17 @@
+name: PROJECT_NAME
+root: PROJECT_ROOT
+
+windows:
+  - dev:
+      layout: even-vertical
+      panes:
+        - commands:
+            - clear
+            - claude
+        - commands:
+            - cd ../PROJECT_NAME
+            - clear
+
+  - git:
+      panes:
+        - lazygit

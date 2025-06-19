@@ -1,0 +1,325 @@
+[settings]
+# bash を用いて対話的なスクリプト実行を許可
+idiomatic_version_file_enable_tools = ["bash"]
+
+# ===== プロジェクト管理タスク =====
+
+# 新規ローカルプロジェクト作成
+# - local/配下にプロジェクトディレクトリを作成
+# - git初期化、Python環境セットアップ（オプション）
+# - tmuxinator設定生成＆セッション開始
+[tasks.new]
+description = "Create a new project directory, init git, optional Python venv, generate tmuxinator config, and start session"
+shell = "bash -lc"
+run = ['''
+read -p "🆕 Project name: " name && \
+base=$(ghq root)/local/$name && \
+mkdir -p "$base" && \
+cd "$base" && \
+git init && \
+read -p "Is this a Python project? (y/N): " is_py && \
+if [[ "$is_py" =~ ^[Yy]$ ]]; then \
+  uv venv; \
+fi && \
+mise_root_dir="$(ghq root)" && \
+template_dir="$mise_root_dir/templates" && \
+template_path="$template_dir/README.md.template" && \
+if [ -f "$template_path" ]; then \
+  sed "s/PROJECT_NAME/$name/g" "$template_path" > README.md; \
+else \
+  echo "# $name" > README.md && echo "" >> README.md && echo "## Description" >> README.md && echo "" >> README.md && echo "TODO: プロジェクトの説明を記載してください" >> README.md; \
+fi && \
+env_template_path="$template_dir/.env.template" && \
+if [ -f "$env_template_path" ]; then \
+  sed "s/PROJECT_NAME/$name/g" "$env_template_path" > .env; \
+fi && \
+envrc_template_path="$template_dir/.envrc.template" && \
+if [ -f "$envrc_template_path" ]; then \
+  sed "s/PROJECT_NAME/$name/g" "$envrc_template_path" > .envrc; \
+fi && \
+gitignore_template_path="$template_dir/.gitignore.template" && \
+if [ -f "$gitignore_template_path" ]; then \
+  sed "s/PROJECT_NAME/$name/g" "$gitignore_template_path" > .gitignore; \
+fi && \
+tmux_template_path="$template_dir/tmuxinator.yml.template" && \
+if [ -f "$tmux_template_path" ]; then \
+  sed -e "s/PROJECT_NAME/$name/g" -e "s|PROJECT_ROOT|$base|g" "$tmux_template_path" > ~/.tmuxinator/$name.yml; \
+else \
+  echo "⚠️  tmuxinator template not found: $tmux_template_path"; \
+fi
+
+echo "✅ Project '$name' created successfully!"
+echo "📁 Location: $base"
+echo "🔧 Tmuxinator config: ~/.tmuxinator/$name.yml"
+echo ""
+echo "🚀 To start working on this project, run:"
+echo "   mise enter"
+''']
+
+# ローカルプロジェクトをGitHubに公開
+# - local/配下のプロジェクトを選択
+# - GitHubリポジトリ作成（public/private選択可能）
+# - github.com/配下に自動移動
+# - tmuxinator設定ファイルのパス更新
+[tasks.publish]
+description = "Select a local project and publish it to GitHub"
+shell = "bash -lc"
+run = ['''
+# local配下のプロジェクトを選択
+local_projects=$(find $(ghq root)/local -maxdepth 1 -type d -name "*" | sed "s|$(ghq root)/local/||" | grep -v "^$")
+if [ -z "$local_projects" ]; then
+  echo "❌ No local projects found"
+  exit 1
+fi
+
+selected=$(echo "$local_projects" | fzf --prompt="📦 Select local project to publish: ")
+if [ -z "$selected" ]; then
+  echo "❌ No project selected"
+  exit 1
+fi
+
+project_path=$(ghq root)/local/$selected
+cd "$project_path"
+
+# GitHubリポジトリ作成
+read -p "🔗 GitHub repository name (default: $selected): " repo_name
+repo_name=${repo_name:-$selected}
+
+read -p "📝 Repository description: " description
+read -p "🔓 Make repository public? (y/N): " is_public
+
+if [[ "$is_public" =~ ^[Yy]$ ]]; then
+  visibility="--public"
+else
+  visibility="--private"
+fi
+
+# GitHub CLIでリポジトリ作成
+gh repo create "$repo_name" $visibility --description "$description" --source=. --remote=origin --push
+
+# README.mdからトピックを読み取ってGitHub Topicsを設定
+if [ -f "README.md" ]; then
+  echo "🏷️  Reading topics from README.md..."
+  topics=$(sed -n '/^## Topics/,/^## /p' README.md | grep '^- ' | sed 's/^- //' | grep -v '^$')
+  if [ -n "$topics" ]; then
+    topic_args=""
+    echo "$topics" | while read -r topic; do
+      if [ -n "$topic" ]; then
+        echo "🏷️  Adding topic: $topic"
+        gh repo edit --add-topic "$topic"
+      fi
+    done
+  else
+    echo "ℹ️  No topics found in README.md Topics section"
+  fi
+else
+  echo "⚠️  README.md not found, skipping topic setup"
+fi
+
+# GitHub上のリポジトリ情報を取得
+github_user=$(gh api user --jq .login)
+github_url="https://github.com/$github_user/$repo_name"
+
+# ghq管理下のgithub.comディレクトリに移動
+github_path=$(ghq root)/github.com/$github_user/$repo_name
+mkdir -p "$(dirname "$github_path")"
+
+# プロジェクトを移動
+echo "📦 Moving project to GitHub directory..."
+mv "$project_path" "$github_path"
+
+# tmuxinator設定ファイルのパスを更新
+tmux_config="$HOME/.tmuxinator/$selected.yml"
+if [ -f "$tmux_config" ]; then
+  echo "🔧 Updating tmuxinator configuration..."
+  sed -i.bak "s|root: .*|root: $github_path|" "$tmux_config"
+  rm "$tmux_config.bak"
+fi
+
+echo "✅ Repository published to GitHub: $github_url"
+echo "📁 Project moved to: $github_path"
+echo "🔧 Tmuxinator config updated"
+echo "🔗 You can now use 'mise enter' to work on this project"
+''']
+
+# プロジェクト削除
+# - ghq管理下の全プロジェクトを表示（local/、github.com/両方含む）
+# - 選択したプロジェクトのディレクトリとtmuxinator設定を削除
+# - 詳細情報表示後、確認プロンプト付きで安全に削除
+[tasks.delete]
+description = "Select and delete a project directory and its tmuxinator config with confirmation"
+shell = "bash -lc"
+run = ['''
+# ghq管理下のプロジェクト一覧を取得
+projects=$(ghq list)
+if [ -z "$projects" ]; then
+  echo "❌ No projects found"
+  exit 1
+fi
+
+# プロジェクト選択
+selected=$(echo "$projects" | fzf --prompt="🗑️  Select project to DELETE: ")
+if [ -z "$selected" ]; then
+  echo "❌ No project selected"
+  exit 1
+fi
+
+project_path=$(ghq root)/$selected
+project_name=$(basename "$selected")
+readme_path="$project_path/README.md"
+
+# プロジェクト情報を詳細表示
+echo "🗑️  Project Deletion Confirmation"
+echo "=================================="
+echo "📁 Project Name: $project_name"
+echo "📍 Directory: $project_path"
+echo "🔧 Tmuxinator Config: ~/.tmuxinator/$project_name.yml"
+echo "🌐 Type: $(dirname "$selected" | sed 's|.*/||')"
+echo ""
+
+# ディレクトリ内容表示
+if [ -d "$project_path" ]; then
+  echo "📋 Directory Contents:"
+  ls -la "$project_path" | head -10
+  file_count=$(find "$project_path" -type f | wc -l)
+  echo "   Total files: $file_count"
+  echo ""
+fi
+
+# Git情報表示
+if [ -d "$project_path/.git" ]; then
+  echo "📊 Git Information:"
+  cd "$project_path"
+  commit_count=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+  last_commit=$(git log -1 --format="%ar" 2>/dev/null || echo "未コミット")
+  echo "   Commits: $commit_count"
+  echo "   Last commit: $last_commit"
+  
+  # 未コミット変更確認
+  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    echo "   ⚠️  Uncommitted changes detected!"
+    git status --porcelain
+  fi
+  echo ""
+fi
+
+# README.md情報表示
+if [ -f "$readme_path" ]; then
+  description=$(sed -n '/^## Description/,/^## /p' "$readme_path" | sed '$d' | tail -n +2 | head -3)
+  if [ -n "$description" ]; then
+    echo "📝 Project Description:"
+    echo "$description"
+    echo ""
+  fi
+fi
+
+echo "⚠️  WARNING: This action cannot be undone!"
+echo "To confirm deletion, type 'DELETE' (all uppercase):"
+read -r confirmation
+
+if [ "$confirmation" != "DELETE" ]; then
+  echo "❌ Deletion cancelled."
+  exit 0
+fi
+
+# ディレクトリ削除
+if [ -d "$project_path" ]; then
+  rm -rf "$project_path"
+  echo "✅ Deleted directory: $project_path"
+else
+  echo "⚠️  Directory not found: $project_path"
+fi
+
+# tmuxセッション終了
+if tmux has-session -t "$project_name" 2>/dev/null; then
+  tmux kill-session -t "$project_name"
+  echo "✅ Killed tmux session: $project_name"
+else
+  echo "ℹ️  No active tmux session: $project_name"
+fi
+
+# tmuxinator設定削除
+tmux_config="$HOME/.tmuxinator/$project_name.yml"
+if [ -f "$tmux_config" ]; then
+  rm "$tmux_config"
+  echo "✅ Deleted tmuxinator config: $tmux_config"
+else
+  echo "⚠️  Tmuxinator config not found: $tmux_config"
+fi
+
+echo "🗑️  Project '$project_name' has been completely removed"
+''']
+
+# プロジェクト一覧と詳細表示
+# - ghq管理下の全プロジェクトを表示（local/、github.com/両方含む）
+# - 選択したプロジェクトのREADME.mdからDescription部分を抽出して表示
+# - プロジェクトの基本情報も併せて表示
+[tasks.info]
+description = "List projects and show details of selected project"
+shell = "bash -lc"
+run = ['''
+# ghq管理下のプロジェクト一覧を取得
+projects=$(ghq list)
+if [ -z "$projects" ]; then
+  echo "❌ No projects found"
+  exit 1
+fi
+
+# プロジェクト選択
+selected=$(echo "$projects" | fzf --prompt="📂 Select project to view details: ")
+if [ -z "$selected" ]; then
+  echo "❌ No project selected"
+  exit 1
+fi
+
+project_path=$(ghq root)/$selected
+project_name=$(basename "$selected")
+readme_path="$project_path/README.md"
+
+echo "📂 Project: $project_name"
+echo "📁 Location: $project_path"
+echo "🌐 Type: $(dirname "$selected" | sed 's|.*/||')"
+echo ""
+
+# README.mdから情報を抽出
+if [ -f "$readme_path" ]; then
+  echo "📄 README.md found:"
+  echo "═══════════════════════════════════════"
+  
+  # Description部分を抽出（## Descriptionから次の##まで）
+  description=$(sed -n '/^## Description/,/^## /p' "$readme_path" | sed '$d' | tail -n +2)
+  if [ -n "$description" ]; then
+    echo "📝 Description:"
+    echo "$description"
+  else
+    echo "📝 Description: (未記載)"
+  fi
+  
+  echo "═══════════════════════════════════════"
+  
+  # ファイル統計
+  if [ -d "$project_path/.git" ]; then
+    cd "$project_path"
+    commit_count=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+    last_commit=$(git log -1 --format="%ar" 2>/dev/null || echo "未コミット")
+    echo "📊 Git統計:"
+    echo "   コミット数: $commit_count"
+    echo "   最終更新: $last_commit"
+  fi
+else
+  echo "📄 README.md: 見つかりません"
+fi
+''']
+
+# 既存プロジェクトへのエントリ
+# - ghq管理下の全プロジェクトを表示（local/、github.com/両方含む）
+# - 選択したプロジェクトのtmuxinatorセッション開始
+[tasks.enter]
+description = "Select an existing ghq project via fzf and start its tmuxinator session"
+shell = "bash -lc"
+run = ['''
+repo=$(ghq list | fzf) && \
+name=$(basename "$repo") && \
+# Start tmuxinator session for selected project
+tmuxinator start "$name"
+''']
