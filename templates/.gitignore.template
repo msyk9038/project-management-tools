@@ -146,5 +146,8 @@ secrets.json
 *.backup
 *.old
 
+# Project Management
+.description
+
 # Project specific
 # Add your project-specific ignores here

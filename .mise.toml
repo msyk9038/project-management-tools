@@ -13,10 +13,12 @@ description = "Create a new project directory, init git, optional Python venv, g
 shell = "bash -lc"
 run = ['''
 read -p "🆕 Project name: " name && \
+read -p "📝 Project description: " description && \
 base=$(ghq root)/local/$name && \
 mkdir -p "$base" && \
 cd "$base" && \
 git init && \
+echo "$description" > .description && \
 read -p "Is this a Python project? (y/N): " is_py && \
 if [[ "$is_py" =~ ^[Yy]$ ]]; then \
   uv venv; \
@@ -85,7 +87,20 @@ cd "$project_path"
 read -p "🔗 GitHub repository name (default: $selected): " repo_name
 repo_name=${repo_name:-$selected}
 
-read -p "📝 Repository description: " description
+# .descriptionファイルから説明を取得
+if [ -f ".description" ]; then
+  auto_description=$(cat .description)
+  echo "📝 Auto-detected description: $auto_description"
+  read -p "📝 Use this description? (Y/n): " use_auto_desc
+  if [[ "$use_auto_desc" =~ ^[Nn]$ ]]; then
+    read -p "📝 Repository description: " description
+  else
+    description="$auto_description"
+  fi
+else
+  read -p "📝 Repository description: " description
+fi
+
 read -p "🔓 Make repository public? (y/N): " is_public
 
 if [[ "$is_public" =~ ^[Yy]$ ]]; then
@@ -95,7 +110,19 @@ else
 fi
 
 # GitHub CLIでリポジトリ作成
-gh repo create "$repo_name" $visibility --description "$description" --source=. --remote=origin --push
+gh repo create "$repo_name" $visibility --description "$description" --source=. --remote=origin
+
+# .descriptionファイルを削除（GitHubにpushしない）
+if [ -f ".description" ]; then
+  echo "🗑️  Removing .description file before push..."
+  rm .description
+  git add .description 2>/dev/null || true
+  git commit -m "Remove .description file before GitHub publish" || true
+fi
+
+# GitHubにpush
+echo "📤 Pushing to GitHub..."
+git push origin main
 
 # README.mdからトピックを読み取ってGitHub Topicsを設定
 if [ -f "README.md" ]; then
@@ -203,14 +230,44 @@ if [ -d "$project_path/.git" ]; then
   echo ""
 fi
 
-# README.md情報表示
-if [ -f "$readme_path" ]; then
-  description=$(sed -n '/^## Description/,/^## /p' "$readme_path" | sed '$d' | tail -n +2 | head -3)
-  if [ -n "$description" ]; then
-    echo "📝 Project Description:"
-    echo "$description"
-    echo ""
+# プロジェクト情報表示
+if [[ "$selected" == github.com/* ]]; then
+  # GitHub情報を取得・表示
+  repo_path="${selected#github.com/}"
+  echo "🌐 GitHub Repository Information:"
+  echo "═══════════════════════════════════════"
+  
+  # GitHub情報を取得
+  if gh_info=$(gh repo view "$repo_path" --json name,description,url,isPrivate 2>/dev/null); then
+    repo_name=$(echo "$gh_info" | jq -r '.name')
+    repo_description=$(echo "$gh_info" | jq -r '.description // "No description"')
+    repo_url=$(echo "$gh_info" | jq -r '.url')
+    is_private=$(echo "$gh_info" | jq -r '.isPrivate')
+    
+    echo "📝 Name: $repo_name"
+    echo "📝 Description: $repo_description"
+    echo "🔗 URL: $repo_url"
+    echo "🔒 Visibility: $([ "$is_private" = "true" ] && echo "Private" || echo "Public")"
+  else
+    echo "⚠️  GitHub情報の取得に失敗しました"
   fi
+  echo "═══════════════════════════════════════"
+  echo ""
+else
+  # ローカルプロジェクト情報表示
+  echo "💻 Local Project Information:"
+  echo "═══════════════════════════════════════"
+  
+  # .descriptionファイルから説明を取得
+  description_file="$project_path/.description"
+  if [ -f "$description_file" ]; then
+    local_description=$(cat "$description_file")
+    echo "📝 Description: $local_description"
+  else
+    echo "📝 Description: No description available"
+  fi
+  echo "═══════════════════════════════════════"
+  echo ""
 fi
 
 echo "⚠️  WARNING: This action cannot be undone!"
@@ -281,33 +338,54 @@ echo "📁 Location: $project_path"
 echo "🌐 Type: $(dirname "$selected" | sed 's|.*/||')"
 echo ""
 
-# README.mdから情報を抽出
-if [ -f "$readme_path" ]; then
-  echo "📄 README.md found:"
+# プロジェクト情報表示
+if [[ "$selected" == github.com/* ]]; then
+  # GitHub情報を取得・表示
+  repo_path="${selected#github.com/}"
+  echo "🌐 GitHub Repository Information:"
   echo "═══════════════════════════════════════"
   
-  # Description部分を抽出（## Descriptionから次の##まで）
-  description=$(sed -n '/^## Description/,/^## /p' "$readme_path" | sed '$d' | tail -n +2)
-  if [ -n "$description" ]; then
-    echo "📝 Description:"
-    echo "$description"
+  # GitHub情報を取得
+  if gh_info=$(gh repo view "$repo_path" --json name,description,url,isPrivate 2>/dev/null); then
+    repo_name=$(echo "$gh_info" | jq -r '.name')
+    repo_description=$(echo "$gh_info" | jq -r '.description // "No description"')
+    repo_url=$(echo "$gh_info" | jq -r '.url')
+    is_private=$(echo "$gh_info" | jq -r '.isPrivate')
+    
+    echo "📝 Name: $repo_name"
+    echo "📝 Description: $repo_description"
+    echo "🔗 URL: $repo_url"
+    echo "🔒 Visibility: $([ "$is_private" = "true" ] && echo "Private" || echo "Public")"
   else
-    echo "📝 Description: (未記載)"
+    echo "⚠️  GitHub情報の取得に失敗しました"
   fi
   
   echo "═══════════════════════════════════════"
-  
-  # ファイル統計
-  if [ -d "$project_path/.git" ]; then
-    cd "$project_path"
-    commit_count=$(git rev-list --count HEAD 2>/dev/null || echo "0")
-    last_commit=$(git log -1 --format="%ar" 2>/dev/null || echo "未コミット")
-    echo "📊 Git統計:"
-    echo "   コミット数: $commit_count"
-    echo "   最終更新: $last_commit"
-  fi
 else
-  echo "📄 README.md: 見つかりません"
+  # ローカルプロジェクト情報表示
+  echo "💻 Local Project Information:"
+  echo "═══════════════════════════════════════"
+  
+  # .descriptionファイルから説明を取得
+  description_file="$project_path/.description"
+  if [ -f "$description_file" ]; then
+    local_description=$(cat "$description_file")
+    echo "📝 Description: $local_description"
+  else
+    echo "📝 Description: No description available"
+  fi
+  
+  echo "═══════════════════════════════════════"
+fi
+
+# ローカルGit統計
+if [ -d "$project_path/.git" ]; then
+  cd "$project_path"
+  commit_count=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+  last_commit=$(git log -1 --format="%ar" 2>/dev/null || echo "未コミット")
+  echo "📊 Git統計:"
+  echo "   コミット数: $commit_count"
+  echo "   最終更新: $last_commit"
 fi
 ''']
 
