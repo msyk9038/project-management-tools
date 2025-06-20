@@ -389,6 +389,77 @@ if [ -d "$project_path/.git" ]; then
 fi
 ''']
 
+# 既存リポジトリのクローン
+# - GitHubリポジトリをghq管理下にクローン
+# - tmuxinator設定ファイルの自動生成
+# - GitHub情報の取得とローカル設定
+[tasks.clone]
+description = "Clone an existing repository and set up tmuxinator config"
+shell = "bash -lc"
+run = ['''
+# Git URLの入力を求める
+read -p "🔗 Git repository URL: " git_url
+
+if [ -z "$git_url" ]; then
+  echo "❌ Git URL is required"
+  echo "Example: git@github.com:user/repo.git"
+  echo "Example: https://github.com/user/repo.git"
+  exit 1
+fi
+
+# GitHubリポジトリ情報を抽出
+if [[ "$git_url" =~ git@github\.com:([^/]+)/([^\.]+)\.git ]]; then
+  github_user="${BASH_REMATCH[1]}"
+  repo_name="${BASH_REMATCH[2]}"
+elif [[ "$git_url" =~ https://github\.com/([^/]+)/([^\.]+) ]]; then
+  github_user="${BASH_REMATCH[1]}"
+  repo_name="${BASH_REMATCH[2]}"
+else
+  echo "❌ Invalid GitHub URL format"
+  echo "Received: $git_url"
+  exit 1
+fi
+
+echo "📦 Cloning repository: $github_user/$repo_name"
+
+# ghqでクローン
+if ! ghq get "$git_url"; then
+  echo "❌ Failed to clone repository"
+  exit 1
+fi
+
+# クローンされたディレクトリに移動
+repo_path=$(ghq root)/github.com/$github_user/$repo_name
+cd "$repo_path"
+
+# GitHub情報を取得してdescriptionを設定
+echo "🌐 Fetching GitHub repository information..."
+if gh_info=$(gh repo view "$github_user/$repo_name" --json description 2>/dev/null); then
+  gh_description=$(echo "$gh_info" | jq -r '.description // ""')
+  if [ -n "$gh_description" ] && [ "$gh_description" != "null" ]; then
+    echo "📝 Found description: $gh_description"
+    echo "$gh_description" > .description
+  fi
+fi
+
+# tmuxinator設定ファイルの生成
+mise_root_dir="$(ghq root)" && \
+template_dir="$mise_root_dir/templates" && \
+tmux_template_path="$template_dir/tmuxinator.yml.template" && \
+if [ -f "$tmux_template_path" ]; then \
+  sed -e "s/PROJECT_NAME/$repo_name/g" -e "s|PROJECT_ROOT|$repo_path|g" "$tmux_template_path" > ~/.tmuxinator/$repo_name.yml; \
+else \
+  echo "⚠️  tmuxinator template not found: $tmux_template_path"; \
+fi
+
+echo "✅ Repository cloned and configured successfully!"
+echo "📁 Location: $repo_path"
+echo "🔧 Tmuxinator config: ~/.tmuxinator/$repo_name.yml"
+echo ""
+echo "🚀 To start working on this project, run:"
+echo "   mise enter"
+''']
+
 # 既存プロジェクトへのエントリ
 # - ghq管理下の全プロジェクトを表示（local/、github.com/両方含む）
 # - 選択したプロジェクトのtmuxinatorセッション開始
