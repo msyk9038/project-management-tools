@@ -402,21 +402,25 @@ read -p "🔗 Git repository URL: " git_url
 
 if [ -z "$git_url" ]; then
   echo "❌ Git URL is required"
-  echo "Example: git@github.com:user/repo.git"
-  echo "Example: https://github.com/user/repo.git"
+  echo "Examples:"
+  echo "  SSH: git@github.com:user/repo.git or git@github.com:user/repo"
+  echo "  HTTPS: https://github.com/user/repo or https://github.com/user/repo.git"
   exit 1
 fi
 
 # GitHubリポジトリ情報を抽出
-if [[ "$git_url" =~ git@github\.com:([^/]+)/([^\.]+)\.git ]]; then
+if [[ "$git_url" =~ git@github\.com:([^/]+)/([^\.]+)(\.git)?$ ]]; then
   github_user="${BASH_REMATCH[1]}"
   repo_name="${BASH_REMATCH[2]}"
-elif [[ "$git_url" =~ https://github\.com/([^/]+)/([^\.]+) ]]; then
+elif [[ "$git_url" =~ https://github\.com/([^/]+)/([^/\.]+)(\.git)?/?$ ]]; then
   github_user="${BASH_REMATCH[1]}"
   repo_name="${BASH_REMATCH[2]}"
 else
   echo "❌ Invalid GitHub URL format"
   echo "Received: $git_url"
+  echo "Supported formats:"
+  echo "  SSH: git@github.com:user/repo.git or git@github.com:user/repo"
+  echo "  HTTPS: https://github.com/user/repo or https://github.com/user/repo.git"
   exit 1
 fi
 
