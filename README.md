@@ -18,156 +18,101 @@ git clone https://github.com/msyk9038/project-management-tools.git
 cd project-management-tools
 ```
 
-### 2. 前提条件のインストール
+### 2. セットアップ
 
-このツールを使用するには以下のツールが必要です。まだインストールしていないものがあれば、下記の手順でインストールしてください。
+**事前準備**: [Homebrew](https://brew.sh/)をインストールしてください。
 
-#### [Homebrew](https://brew.sh/) (パッケージマネージャー)
 ```bash
+# macOS/Linux用パッケージマネージャー
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
-macOS/Linuxでソフトウェアのインストールとアップデートを簡単にするツールです。
 
-#### [mise](https://mise.jdx.dev/) - タスクランナー・開発環境管理
-```bash
-brew install mise
-```
-**できること:** プロジェクトごとのタスク実行、言語バージョン管理、環境変数管理を統一的に行えます。今回は主にタスクランナーとして使用します。
-
-#### [ghq](https://github.com/x-motemen/ghq) - リポジトリ管理
-```bash
-brew install ghq
-```
-**できること:** GitHubなどのリモートリポジトリをローカルで効率的に管理できます。決まったルールでディレクトリが整理され、プロジェクトの場所を迷うことがなくなります。
-
-#### [fzf](https://github.com/junegunn/fzf) - ファジーファインダー
-```bash
-brew install fzf
-```
-**できること:** 曖昧検索で素早くファイルやディレクトリを選択できます。プロジェクト選択時の操作が格段に快適になります。
-
-#### [tmux](https://github.com/tmux/tmux) - ターミナルマルチプレクサー
-```bash
-brew install tmux
-```
-**できること:** 1つのターミナルウィンドウで複数のセッションを管理できます。プロジェクト作業時に複数のペインを同時に使えるようになります。
-
-#### [tmuxinator](https://github.com/tmuxinator/tmuxinator) - tmux セッション管理
-```bash
-brew install tmuxinator
-```
-**できること:** tmuxセッションの設定をファイルで管理し、プロジェクトごとに決まったレイアウトで開発環境を起動できます。
-
-#### [GitHub CLI](https://cli.github.com/) - GitHub操作
-```bash
-brew install gh
-```
-**できること:** コマンドラインからGitHubリポジトリの作成、プルリクエスト、Issues操作などが行えます。ブラウザを開かずにGitHub操作が完結します。
-
-#### [lazygit](https://github.com/jesseduffield/lazygit) - Git TUI
-```bash
-brew install lazygit
-```
-**できること:** ターミナル上で直感的にGit操作ができるツールです。ステージング、コミット、ブランチ操作などがマウス操作のような感覚で行えます。
-
-#### [uv](https://github.com/astral-sh/uv) - Python 環境管理（Pythonプロジェクトの場合）
-```bash
-brew install uv
-```
-**できること:** 従来のpipenvやpoetryより高速なPython仮想環境管理ツールです。依存関係の管理が劇的に高速化されます。
-
-#### GitHub CLI の認証設定
-GitHubとの連携のため、初回のみ認証が必要です：
-```bash
-gh auth login
-```
-ブラウザが開くので、GitHubアカウントでログインしてください。
-
-### 3. グローバルセットアップの実行
+**自動セットアップ実行**:
 
 ```bash
 ./setup.sh
 ```
 
-このスクリプトが以下を実行します：
-- `.mise.toml` を `~/ghq` にコピー
-- `templates/` ディレクトリを `~/ghq/templates` にコピー
-- 既存ファイルの自動バックアップ
-- 適切なパーミッション設定
+このスクリプトが必要なソフトウェアを自動インストールし、設定ファイルをセットアップします。
 
-### 4. 設定の信頼
+**設定の有効化**:
 
 ```bash
 cd ~/ghq
 mise trust
 ```
 
+これで準備完了です！
+
 ## 🚀 使い方
 
-### 1. 新規プロジェクト作成
+### 基本的なワークフロー
+
+1. **アイデア段階**: `mise new` でローカルにプロジェクト作成
+2. **開発進行**: ローカルで自由に実験・開発
+3. **公開準備**: `mise publish` でGitHubに公開
+4. **継続開発**: `mise enter` で開発環境を起動
+
+### コマンド詳細
+
+#### 1. 新規プロジェクト作成
 
 ```bash
 mise new
 ```
 
-**実行内容:**
-- プロジェクト名の入力
-- `$(ghq root)/local/プロジェクト名` にディレクトリ作成
-- Git リポジトリの初期化
-- Python プロジェクトかどうかの確認（uv venv の作成）
-- テンプレートファイルからプロジェクトファイルを生成：
-  - `README.md` (プロジェクト概要)
-  - `.env` (環境変数設定)
-  - `.envrc` (direnv設定)
-  - `.gitignore` (Git除外設定)
-- tmuxinator 設定ファイルの生成
+プロジェクト名を入力すると、以下が自動実行されます：
+- ローカル開発用ディレクトリの作成
+- Gitリポジトリの初期化
+- プロジェクトファイルの生成（README、設定ファイル等）
+- 開発環境設定の準備
 
-### 2. GitHub への公開
+#### 2. GitHub への公開
 
 ```bash
 mise publish
 ```
 
-**実行内容:**
-- `local/` 配下のプロジェクトを fzf で選択
-- GitHub リポジトリ名の設定（デフォルト: プロジェクト名）
-- リポジトリの説明入力
-- 公開設定の選択（public/private）
-- GitHub CLI でリポジトリ作成
-- README.md の Topics セクションから GitHub Topics を自動設定
-- プロジェクトを `github.com/ユーザー名/リポジトリ名` に移動
-- tmuxinator 設定ファイルのパス更新
+開発中のプロジェクトを一覧から選択し、GitHubに公開します：
+- プロジェクト選択画面の表示
+- リポジトリ名と説明の設定
+- 公開設定（public/private）の選択
+- GitHubリポジトリの自動作成
+- プロジェクトファイルの移動
 
-### 3. 既存プロジェクトへの移行
+#### 3. プロジェクトを開く
 
 ```bash
 mise enter
 ```
 
-**実行内容:**
-- ghq 管理下の全プロジェクトを fzf で表示
-- 選択したプロジェクトの tmuxinator セッション開始
+既存のプロジェクトを選択して開発環境を起動：
+- 全プロジェクトの一覧表示
+- プロジェクト選択
+- 開発環境の自動起動
 
-### 4. プロジェクト情報表示
+#### 4. プロジェクト情報表示
 
 ```bash
 mise info
 ```
 
-**実行内容:**
-- ghq 管理下の全プロジェクトを fzf で表示
-- 選択したプロジェクトの詳細情報表示（README概要、Git統計など）
+プロジェクトの詳細情報を確認：
+- プロジェクト一覧から選択
+- README概要とGit統計の表示
 
-### 5. プロジェクト削除
+#### 5. プロジェクト削除
 
 ```bash
 mise delete
 ```
 
-**実行内容:**
-- ghq 管理下の全プロジェクトを fzf で表示
-- プロジェクトの詳細情報表示（安全確認）
-- 'DELETE' 入力による確認後、プロジェクトと tmuxinator 設定を削除
+不要なプロジェクトを安全に削除：
+- プロジェクト一覧から選択
+- 詳細情報表示による確認
+- 確認入力後に**ローカル**から完全削除
+
+**注意**: GitHubに公開済みのプロジェクトの場合、ローカルファイルのみ削除されます。GitHubリポジトリは残るので安心です。
 
 ## 🏗️ ディレクトリ構造
 
@@ -254,6 +199,22 @@ windows:
 - **段階的な公開**: ローカル → GitHub への自然な移行
 - **整理された構造**: ローカル開発と公開済みの明確な分離
 - **自動化**: 手動作業を最小限に抑制
+
+## 🔧 使用ソフトウェアについて
+
+このツールでは以下のソフトウェアを使用しています（setup.sh実行時に自動インストールされます）：
+
+### 必須ツール
+
+- **[mise](https://mise.jdx.dev/)**: タスクランナー・開発環境管理
+- **[ghq](https://github.com/x-motemen/ghq)**: リポジトリ管理
+- **[fzf](https://github.com/junegunn/fzf)**: ファジーファインダー
+- **[tmux](https://github.com/tmux/tmux)**: ターミナルマルチプレクサー
+- **[tmuxinator](https://github.com/tmuxinator/tmuxinator)**: tmux セッション管理
+- **[GitHub CLI](https://cli.github.com/)**: GitHub操作
+- **[lazygit](https://github.com/jesseduffield/lazygit)**: Git TUI
+- **[uv](https://github.com/astral-sh/uv)**: Python 環境管理
+
 
 ## 📄 License
 

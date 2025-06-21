@@ -38,6 +38,108 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_MISE_TOML="$SCRIPT_DIR/.mise.toml"
 SOURCE_TEMPLATES_DIR="$SCRIPT_DIR/templates"
 
+# 必要なソフトウェアのリスト
+REQUIRED_SOFTWARE=(
+    "mise"
+    "ghq"
+    "fzf"
+    "tmux"
+    "tmuxinator"
+    "gh"
+    "lazygit"
+    "uv"
+)
+
+# ソフトウェアのインストール状況をチェックする関数
+check_software() {
+    log_info "必要なソフトウェアの導入状況をチェック中..."
+    
+    local missing_software=()
+    
+    for software in "${REQUIRED_SOFTWARE[@]}"; do
+        if command -v "$software" >/dev/null 2>&1; then
+            log_success "$software: インストール済み"
+        else
+            log_warning "$software: 未インストール"
+            missing_software+=("$software")
+        fi
+    done
+    
+    if [ ${#missing_software[@]} -gt 0 ]; then
+        log_info "未インストールのソフトウェアを自動インストール中..."
+        
+        # Homebrewの存在確認
+        if ! command -v brew >/dev/null 2>&1; then
+            log_error "Homebrewがインストールされていません。"
+            log_error "まず以下のコマンドでHomebrewをインストールしてください："
+            log_error "/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+            exit 1
+        fi
+        
+        # 未インストールのソフトウェアをインストール
+        for software in "${missing_software[@]}"; do
+            log_info "$software をインストール中..."
+            if brew install "$software"; then
+                log_success "$software のインストールが完了しました"
+            else
+                log_error "$software のインストールに失敗しました"
+                exit 1
+            fi
+        done
+    else
+        log_success "すべての必要なソフトウェアがインストール済みです"
+    fi
+}
+
+# tmuxinatorディレクトリの作成
+create_tmuxinator_dir() {
+    local tmuxinator_dir="$HOME/.tmuxinator"
+    
+    if [ ! -d "$tmuxinator_dir" ]; then
+        log_info "~/.tmuxinator ディレクトリを作成中..."
+        mkdir -p "$tmuxinator_dir"
+        log_success "~/.tmuxinator ディレクトリを作成しました"
+    else
+        log_success "~/.tmuxinator ディレクトリは既に存在します"
+    fi
+}
+
+# GitHub CLIの認証状況をチェックする関数
+check_github_auth() {
+    log_info "GitHub CLIの認証状況をチェック中..."
+    
+    if command -v gh >/dev/null 2>&1; then
+        if gh auth status >/dev/null 2>&1; then
+            log_success "GitHub CLI: 認証済み"
+        else
+            log_warning "GitHub CLI: 未認証"
+            log_info "GitHubとの連携のため、認証を行ってください："
+            echo ""
+            echo "  gh auth login"
+            echo ""
+            log_info "認証が完了したら、再度セットアップスクリプトを実行してください。"
+            
+            read -p "今すぐ認証を行いますか？ (y/N): " -n 1 -r
+            echo
+            
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log_info "GitHub CLI認証を開始します..."
+                if gh auth login; then
+                    log_success "GitHub CLI認証が完了しました"
+                else
+                    log_error "GitHub CLI認証に失敗しました"
+                    log_error "後で手動で 'gh auth login' を実行してください"
+                fi
+            else
+                log_warning "GitHub CLI認証をスキップしました"
+                log_warning "後で手動で 'gh auth login' を実行してください"
+            fi
+        fi
+    else
+        log_warning "GitHub CLIがまだインストールされていません（後でインストールされます）"
+    fi
+}
+
 # インストール先を確認
 GHQ_ROOT="$(ghq root 2>/dev/null || echo "$HOME/ghq")"
 if [ ! -d "$GHQ_ROOT" ]; then
@@ -50,6 +152,14 @@ TARGET_TEMPLATES_DIR="$GHQ_ROOT/templates"
 
 echo "🚀 Project Management Tools Setup"
 echo "=================================="
+echo ""
+
+# ソフトウェアのインストール状況チェック
+check_software
+
+# tmuxinatorディレクトリの作成
+create_tmuxinator_dir
+
 echo ""
 log_info "Source directory: $SCRIPT_DIR"
 log_info "Target directory: $GHQ_ROOT"
@@ -94,6 +204,8 @@ chmod 644 "$TARGET_MISE_TOML"
 find "$TARGET_TEMPLATES_DIR" -type f -exec chmod 644 {} \;
 log_success "Permissions set successfully"
 
+# GitHub CLIの認証状況チェック
+check_github_auth
 
 # インストール完了
 echo ""
