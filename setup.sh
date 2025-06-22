@@ -48,6 +48,7 @@ REQUIRED_SOFTWARE=(
     "gh"
     "lazygit"
     "uv"
+    "devcontainer"
 )
 
 # ソフトウェアのインストール状況をチェックする関数
@@ -202,6 +203,11 @@ fi
 log_info "Setting permissions..."
 chmod 644 "$TARGET_MISE_TOML"
 find "$TARGET_TEMPLATES_DIR" -type f -exec chmod 644 {} \;
+# launch.shに実行権限を付与
+if [ -f "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh" ]; then
+    chmod +x "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh"
+    log_success "Set execute permission for launch.sh"
+fi
 log_success "Permissions set successfully"
 
 # GitHub CLIの認証状況チェック

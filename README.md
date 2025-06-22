@@ -89,7 +89,13 @@ mise enter
 既存のプロジェクトを選択して開発環境を起動：
 - 全プロジェクトの一覧表示
 - プロジェクト選択
-- 開発環境の自動起動
+- tmux環境が起動（2つのウィンドウ構成）
+  - **devウィンドウ**: 上下2分割
+    - 上側: Claude Code（AI開発アシスタント）
+    - 下側: 通常のターミナル
+  - **gitウィンドウ**: Git操作用（lazygit）
+
+**安全性について**: Claude Codeは開発コンテナ内で動作するため、万が一AIが予期しない動作をしても影響範囲はプロジェクト内に限定され、システム全体への影響はありません。
 
 #### 4. プロジェクト情報表示
 
@@ -214,6 +220,7 @@ windows:
 - **[GitHub CLI](https://cli.github.com/)**: GitHub操作
 - **[lazygit](https://github.com/jesseduffield/lazygit)**: Git TUI
 - **[uv](https://github.com/astral-sh/uv)**: Python 環境管理
+- **[devcontainer](https://containers.dev/)**: 開発コンテナ管理
 
 
 ## 📄 License
