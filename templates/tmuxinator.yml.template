@@ -8,7 +8,7 @@ windows:
         - commands:
             - ./.devcontainer/launch.sh
         - commands:
-            - cd ../test
+            - cd ../PROJECT_NAME
             - clear
 
   - git:
