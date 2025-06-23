@@ -2,15 +2,16 @@ name: PROJECT_NAME
 root: PROJECT_ROOT
 
 windows:
-  - dev:
-      layout: even-vertical
+  - genAI:
       panes:
         - commands:
             - ./.devcontainer/launch.sh
+  - edit:
+      panes:
         - commands:
             - cd ../PROJECT_NAME
             - clear
-
   - git:
       panes:
-        - lazygit
+        - commands:
+            - lazygit
