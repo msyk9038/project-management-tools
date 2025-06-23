@@ -89,13 +89,19 @@ mise enter
 既存のプロジェクトを選択して開発環境を起動：
 - 全プロジェクトの一覧表示
 - プロジェクト選択
-- tmux環境が起動（2つのウィンドウ構成）
-  - **devウィンドウ**: 上下2分割
-    - 上側: Claude Code（AI開発アシスタント）
-    - 下側: 通常のターミナル
+- tmux環境が起動（3つのウィンドウ構成）
+  - **genAIウィンドウ**: devcontainer内でClaude Code起動（AI開発アシスタント）
+  - **editウィンドウ**: コード編集・通常のターミナル作業
   - **gitウィンドウ**: Git操作用（lazygit）
 
 **安全性について**: Claude Codeは開発コンテナ内で動作するため、万が一AIが予期しない動作をしても影響範囲はプロジェクト内に限定され、システム全体への影響はありません。
+
+**重要な注意事項**: `mise enter`で起動される開発環境では、**genAIウィンドウ（Claude Code）からはコミットやプッシュができません**。これは意図的な設計です。
+
+- **AIの役割**: コードの生成・修正・提案のみ
+- **人間の役割**: コードの検証・承認・コミット・プッシュ
+
+この分離により、AIが生成したコードを人間が必ず確認・検証してからリポジトリに反映する安全なワークフローを実現しています。コミット・プッシュは必ず**gitウィンドウ**または**editorウィンドウ**から実行してください。
 
 #### 4. プロジェクト情報表示
 
@@ -154,19 +160,21 @@ name: PROJECT_NAME
 root: PROJECT_ROOT
 
 windows:
-  - dev:
-      layout: even-vertical
+  - genAI:
       panes:
         - commands:
-            - clear
-            - claude                 # Claude Code起動
+            - ./.devcontainer/launch.sh  # devcontainer内でClaude Code起動
+
+  - edit:
+      panes:
         - commands:
             - cd ../PROJECT_NAME
-            - clear                  # 作業ディレクトリ
+            - clear                      # コード編集・通常作業
 
   - git:
       panes:
-        - lazygit                    # Git TUI
+        - commands:
+            - lazygit                    # Git TUI
 ```
 
 ## 💡 ワークフロー例
