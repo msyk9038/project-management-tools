@@ -46,6 +46,11 @@ devcontainer_template_dir="$template_dir/.devcontainer" && \
 if [ -d "$devcontainer_template_dir" ]; then \
   cp -rp "$devcontainer_template_dir" .; \
   chmod +x .devcontainer/launch.sh 2>/dev/null || true; \
+  if [ -f ".devcontainer/devcontainer.json" ]; then \
+    sed -i.bak "s|\"runArgs\": \\[|\"runArgs\": [\\n    \"--name=project-$name-container\",|" .devcontainer/devcontainer.json && \
+    rm .devcontainer/devcontainer.json.bak; \
+    echo "✅ Updated devcontainer.json with project-specific container name"; \
+  fi; \
   echo "✅ Copied .devcontainer configuration"; \
 else \
   echo "⚠️  .devcontainer template not found: $devcontainer_template_dir"; \
@@ -501,6 +506,11 @@ if [ -d "$devcontainer_template_dir" ]; then \
   else \
     cp -rp "$devcontainer_template_dir" .; \
     chmod +x .devcontainer/launch.sh 2>/dev/null || true; \
+    if [ -f ".devcontainer/devcontainer.json" ]; then \
+      sed -i.bak "s|\"runArgs\": \\[|\"runArgs\": [\\n    \"--name=project-$repo_name-container\",|" .devcontainer/devcontainer.json && \
+      rm .devcontainer/devcontainer.json.bak; \
+      echo "✅ Updated devcontainer.json with project-specific container name"; \
+    fi; \
     echo "✅ Copied .devcontainer configuration"; \
   fi; \
 else \
