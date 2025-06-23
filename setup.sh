@@ -35,8 +35,8 @@ log_error() {
 
 # スクリプトのディレクトリを取得
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_MISE_TOML="$SCRIPT_DIR/.mise.toml"
-SOURCE_TEMPLATES_DIR="$SCRIPT_DIR/templates"
+SOURCE_MISE_TOML="$SCRIPT_DIR/src/.mise.toml"
+SOURCE_TEMPLATES_DIR="$SCRIPT_DIR/src/templates"
 
 # 必要なソフトウェアのリスト
 REQUIRED_SOFTWARE=(

@@ -53,14 +53,14 @@ else \
 fi && \
 tmux_template_path="$template_dir/tmuxinator.yml.template" && \
 if [ -f "$tmux_template_path" ]; then \
-  sed -e "s/PROJECT_NAME/$name/g" -e "s|PROJECT_ROOT|$base|g" "$tmux_template_path" > ~/.tmuxinator/$name.yml; \
+  mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator" && sed -e "s/PROJECT_NAME/$name/g" -e "s|PROJECT_ROOT|$base|g" "$tmux_template_path" > "${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$name.yml"; \
 else \
   echo "⚠️  tmuxinator template not found: $tmux_template_path"; \
 fi
 
 echo "✅ Project '$name' created successfully!"
 echo "📁 Location: $base"
-echo "🔧 Tmuxinator config: ~/.tmuxinator/$name.yml"
+echo "🔧 Tmuxinator config: ${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$name.yml"
 echo ""
 echo "🚀 To start working on this project, run:"
 echo "   mise enter"
@@ -164,7 +164,7 @@ echo "📦 Moving project to GitHub directory..."
 mv "$project_path" "$github_path"
 
 # tmuxinator設定ファイルのパスを更新
-tmux_config="$HOME/.tmuxinator/$selected.yml"
+tmux_config="${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$selected.yml"
 if [ -f "$tmux_config" ]; then
   echo "🔧 Updating tmuxinator configuration..."
   sed -i.bak "s|root: .*|root: $github_path|" "$tmux_config"
@@ -208,7 +208,7 @@ echo "🗑️  Project Deletion Confirmation"
 echo "=================================="
 echo "📁 Project Name: $project_name"
 echo "📍 Directory: $project_path"
-echo "🔧 Tmuxinator Config: ~/.tmuxinator/$project_name.yml"
+echo "🔧 Tmuxinator Config: ${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$project_name.yml"
 echo "🌐 Type: $(dirname "$selected" | sed 's|.*/||')"
 echo ""
 
@@ -304,7 +304,7 @@ else
 fi
 
 # tmuxinator設定削除
-tmux_config="$HOME/.tmuxinator/$project_name.yml"
+tmux_config="${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$project_name.yml"
 if [ -f "$tmux_config" ]; then
   rm "$tmux_config"
   echo "✅ Deleted tmuxinator config: $tmux_config"
@@ -471,14 +471,14 @@ else \
 fi && \
 tmux_template_path="$template_dir/tmuxinator.yml.template" && \
 if [ -f "$tmux_template_path" ]; then \
-  sed -e "s/PROJECT_NAME/$repo_name/g" -e "s|PROJECT_ROOT|$repo_path|g" "$tmux_template_path" > ~/.tmuxinator/$repo_name.yml; \
+  mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator" && sed -e "s/PROJECT_NAME/$repo_name/g" -e "s|PROJECT_ROOT|$repo_path|g" "$tmux_template_path" > "${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$repo_name.yml"; \
 else \
   echo "⚠️  tmuxinator template not found: $tmux_template_path"; \
 fi
 
 echo "✅ Repository cloned and configured successfully!"
 echo "📁 Location: $repo_path"
-echo "🔧 Tmuxinator config: ~/.tmuxinator/$repo_name.yml"
+echo "🔧 Tmuxinator config: ${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$repo_name.yml"
 echo ""
 echo "🚀 To start working on this project, run:"
 echo "   mise enter"
