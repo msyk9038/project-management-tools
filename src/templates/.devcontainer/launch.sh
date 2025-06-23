@@ -15,4 +15,4 @@ for i in {1..10}; do
 done
 
 # 3) zsh を起動（ここで attach します）
-exec devcontainer exec --workspace-folder . zsh -ic 'claude'
+exec devcontainer exec --workspace-folder . zsh -ic 'claude --dangerously-skip-permissions'

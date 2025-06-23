@@ -149,5 +149,9 @@ secrets.json
 # Project Management
 .description
 
+# Claude AI Assistant
+.claude/
+CLAUDE.md
+
 # Project specific
 # Add your project-specific ignores here

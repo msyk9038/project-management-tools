@@ -1,0 +1,12 @@
+- **task_id**: タスクの通し番号
+- **title**: タスクのタイトル
+- **status**: TODO/IN_PROGRESS/DONE
+- **priority**: HIGH/MEDIUM/LOW
+- **dependency**: 前提となるタスクID
+- **description**: このタスクで達成すべき具体的な目標
+- **TODO**:
+  - [ ] [具体的な実装ステップ1]
+  - [ ] [具体的な実装ステップ2]
+  - [ ] [具体的な実装ステップ3]
+- **test-strategy**: [このタスクをどのようにテストするか]
+- **goal-indicator**: [タスクが完了したと判断する基準]

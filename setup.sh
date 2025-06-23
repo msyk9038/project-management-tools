@@ -208,6 +208,12 @@ if [ -f "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh" ]; then
     chmod +x "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh"
     log_success "Set execute permission for launch.sh"
 fi
+# claudeテンプレートディレクトリの確認
+if [ -d "$TARGET_TEMPLATES_DIR/claude" ]; then
+    log_success "Claude templates copied successfully"
+else
+    log_warning "Claude templates directory not found"
+fi
 log_success "Permissions set successfully"
 
 # GitHub CLIの認証状況チェック
