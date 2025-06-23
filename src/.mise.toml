@@ -67,6 +67,16 @@ if [ -d "$claude_template_dir" ]; then \
   if [ -f "$order_template" ]; then \
     cp "$order_template" .claude/; \
     echo "✅ Copied order.md to .claude/"; \
+  fi && \
+  settings_template="$claude_template_dir/settings.json" && \
+  if [ -f "$settings_template" ]; then \
+    cp "$settings_template" .claude/; \
+    echo "✅ Copied settings.json to .claude/"; \
+  fi && \
+  mcp_template="$claude_template_dir/.mcp.json" && \
+  if [ -f "$mcp_template" ]; then \
+    cp "$mcp_template" .mcp.json; \
+    echo "✅ Copied .mcp.json"; \
   fi; \
 else \
   echo "⚠️  claude template not found: $claude_template_dir"; \
@@ -477,41 +487,93 @@ fi
 mise_root_dir="$(ghq root)" && \
 template_dir="$mise_root_dir/templates" && \
 devcontainer_template_dir="$template_dir/.devcontainer" && \
-if [ -d "$devcontainer_template_dir" ] && [ ! -d ".devcontainer" ]; then \
-  cp -rp "$devcontainer_template_dir" .; \
-  chmod +x .devcontainer/launch.sh 2>/dev/null || true; \
-  echo "✅ Copied .devcontainer configuration"; \
-else \
+if [ -d "$devcontainer_template_dir" ]; then \
   if [ -d ".devcontainer" ]; then \
-    echo "ℹ️  .devcontainer already exists, skipping"; \
+    read -p "⚠️  .devcontainer directory already exists. Overwrite? (y/N): " overwrite_devcontainer; \
+    if [[ "$overwrite_devcontainer" =~ ^[Yy]$ ]]; then \
+      rm -rf .devcontainer; \
+      cp -rp "$devcontainer_template_dir" .; \
+      chmod +x .devcontainer/launch.sh 2>/dev/null || true; \
+      echo "✅ Overwritten .devcontainer configuration"; \
+    else \
+      echo "ℹ️  Skipped .devcontainer configuration"; \
+    fi; \
   else \
-    echo "⚠️  .devcontainer template not found: $devcontainer_template_dir"; \
+    cp -rp "$devcontainer_template_dir" .; \
+    chmod +x .devcontainer/launch.sh 2>/dev/null || true; \
+    echo "✅ Copied .devcontainer configuration"; \
   fi; \
+else \
+  echo "⚠️  .devcontainer template not found: $devcontainer_template_dir"; \
 fi && \
 claude_template_dir="$template_dir/claude" && \
-if [ -d "$claude_template_dir" ] && [ ! -f "CLAUDE.md" ]; then \
-  claude_md_template="$claude_template_dir/CLAUDE.md" && \
-  if [ -f "$claude_md_template" ]; then \
-    cp "$claude_md_template" CLAUDE.md; \
-    echo "✅ Copied CLAUDE.md"; \
-  fi && \
-  mkdir -p .claude/tasks && \
-  task_template="$claude_template_dir/task_template.md" && \
-  if [ -f "$task_template" ]; then \
-    cp "$task_template" .claude/tasks/; \
-    echo "✅ Copied task_template.md to .claude/tasks/"; \
-  fi && \
-  order_template="$claude_template_dir/order.md" && \
-  if [ -f "$order_template" ]; then \
-    cp "$order_template" .claude/; \
-    echo "✅ Copied order.md to .claude/"; \
+if [ -d "$claude_template_dir" ]; then \
+  overwrite_claude=false; \
+  if [ -f "CLAUDE.md" ]; then \
+    read -p "⚠️  CLAUDE.md already exists. Overwrite? (y/N): " overwrite_claude_md; \
+    if [[ "$overwrite_claude_md" =~ ^[Yy]$ ]]; then \
+      overwrite_claude=true; \
+    else \
+      echo "ℹ️  Skipped CLAUDE.md"; \
+    fi; \
+  else \
+    overwrite_claude=true; \
+  fi; \
+  if [ "$overwrite_claude" = true ]; then \
+    claude_md_template="$claude_template_dir/CLAUDE.md" && \
+    if [ -f "$claude_md_template" ]; then \
+      cp "$claude_md_template" CLAUDE.md; \
+      echo "✅ Copied CLAUDE.md"; \
+    fi; \
+  fi; \
+  if [ -d ".claude" ]; then \
+    read -p "⚠️  .claude directory already exists. Overwrite? (y/N): " overwrite_claude_dir; \
+    if [[ "$overwrite_claude_dir" =~ ^[Yy]$ ]]; then \
+      rm -rf .claude; \
+      mkdir -p .claude/tasks; \
+      task_template="$claude_template_dir/task_template.md" && \
+      if [ -f "$task_template" ]; then \
+        cp "$task_template" .claude/tasks/; \
+        echo "✅ Copied task_template.md to .claude/tasks/"; \
+      fi; \
+      order_template="$claude_template_dir/order.md" && \
+      if [ -f "$order_template" ]; then \
+        cp "$order_template" .claude/; \
+        echo "✅ Copied order.md to .claude/"; \
+      fi; \
+      settings_template="$claude_template_dir/settings.json" && \
+      if [ -f "$settings_template" ]; then \
+        cp "$settings_template" .claude/; \
+        echo "✅ Copied settings.json to .claude/"; \
+      fi; \
+    else \
+      echo "ℹ️  Skipped .claude directory setup"; \
+    fi; \
+  else \
+    mkdir -p .claude/tasks; \
+    task_template="$claude_template_dir/task_template.md" && \
+    if [ -f "$task_template" ]; then \
+      cp "$task_template" .claude/tasks/; \
+      echo "✅ Copied task_template.md to .claude/tasks/"; \
+    fi; \
+    order_template="$claude_template_dir/order.md" && \
+    if [ -f "$order_template" ]; then \
+      cp "$order_template" .claude/; \
+      echo "✅ Copied order.md to .claude/"; \
+    fi; \
+    settings_template="$claude_template_dir/settings.json" && \
+    if [ -f "$settings_template" ]; then \
+      cp "$settings_template" .claude/; \
+      echo "✅ Copied settings.json to .claude/"; \
+    fi && \
+    mcp_template="$claude_template_dir/.mcp.json" && \
+    if [ -f "$mcp_template" ]; then \
+      cp "$mcp_template" .mcp.json; \
+      echo "✅ Copied .mcp.json"; \
+    fi; \
   fi; \
 else \
-  if [ -f "CLAUDE.md" ]; then \
-    echo "ℹ️  CLAUDE.md already exists, skipping claude template setup"; \
-  else \
-    echo "⚠️  claude template not found: $claude_template_dir"; \
-  fi; \
+  echo "⚠️  claude template not found: $claude_template_dir"; \
 fi && \
 tmux_template_path="$template_dir/tmuxinator.yml.template" && \
 if [ -f "$tmux_template_path" ]; then \
