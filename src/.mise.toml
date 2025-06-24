@@ -38,6 +38,7 @@ envrc_template_path="$template_dir/.envrc.template" && \
 if [ -f "$envrc_template_path" ]; then \
   sed "s/PROJECT_NAME/$name/g" "$envrc_template_path" > .envrc; \
 fi && \
+echo "$description" > .description && \
 gitignore_template_path="$template_dir/.gitignore.template" && \
 if [ -f "$gitignore_template_path" ]; then \
   sed "s/PROJECT_NAME/$name/g" "$gitignore_template_path" > .gitignore; \
