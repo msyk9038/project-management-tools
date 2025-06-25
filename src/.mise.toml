@@ -118,7 +118,7 @@ if [ -z "$local_projects" ]; then
   exit 1
 fi
 
-selected=$(echo "$local_projects" | fzf --prompt="📦 Select local project to publish: ")
+selected=$(echo "$local_projects" | fzf --prompt="📦 Select local project to publish: " --bind='ctrl-j:down,ctrl-k:up')
 if [ -z "$selected" ]; then
   echo "❌ No project selected"
   exit 1
@@ -229,7 +229,7 @@ if [ -z "$projects" ]; then
 fi
 
 # プロジェクト選択
-selected=$(echo "$projects" | fzf --prompt="🗑️  Select project to DELETE: ")
+selected=$(echo "$projects" | fzf --prompt="🗑️  Select project to DELETE: " --bind='ctrl-j:down,ctrl-k:up')
 if [ -z "$selected" ]; then
   echo "❌ No project selected"
   exit 1
@@ -367,7 +367,7 @@ if [ -z "$projects" ]; then
 fi
 
 # プロジェクト選択
-selected=$(echo "$projects" | fzf --prompt="📂 Select project to view details: ")
+selected=$(echo "$projects" | fzf --prompt="📂 Select project to view details: " --bind='ctrl-j:down,ctrl-k:up')
 if [ -z "$selected" ]; then
   echo "❌ No project selected"
   exit 1
@@ -608,7 +608,7 @@ echo "   mise enter"
 description = "Select an existing ghq project via fzf and start its tmuxinator session"
 shell = "bash -lc"
 run = ['''
-repo=$(ghq list | fzf) && \
+repo=$(ghq list | fzf --bind='ctrl-j:down,ctrl-k:up') && \
 name=$(basename "$repo") && \
 # Start tmuxinator session for selected project
 tmuxinator start "$name"
