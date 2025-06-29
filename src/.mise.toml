@@ -127,6 +127,38 @@ fi
 project_path=$(ghq root)/local/$selected
 cd "$project_path"
 
+# Gitリポジトリの状態確認
+if [ ! -d ".git" ]; then
+  echo "❌ This is not a Git repository. Please initialize Git first with 'git init'"
+  exit 1
+fi
+
+# 未コミットの変更があるかチェック
+if [ -n "$(git status --porcelain)" ]; then
+  echo "❌ Uncommitted changes detected. Please commit all changes before publishing."
+  echo ""
+  echo "📋 Uncommitted changes:"
+  git status --short
+  echo ""
+  echo "💡 To commit changes, run:"
+  echo "   git add ."
+  echo "   git commit -m 'Your commit message'"
+  exit 1
+fi
+
+# コミットが存在するかチェック
+if ! git rev-parse HEAD >/dev/null 2>&1; then
+  echo "❌ No commits found. Please make at least one commit before publishing."
+  echo ""
+  echo "💡 To make your first commit, run:"
+  echo "   git add ."
+  echo "   git commit -m 'Initial commit'"
+  exit 1
+fi
+
+echo "✅ Git repository is clean and ready for publishing"
+echo ""
+
 # GitHubリポジトリ作成
 read -p "🔗 GitHub repository name (default: $selected): " repo_name
 repo_name=${repo_name:-$selected}
@@ -199,17 +231,31 @@ mkdir -p "$(dirname "$github_path")"
 echo "📦 Moving project to GitHub directory..."
 mv "$project_path" "$github_path"
 
-# tmuxinator設定ファイルのパスを更新
-tmux_config="${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$selected.yml"
-if [ -f "$tmux_config" ]; then
+# tmuxinator設定ファイルの更新・リネーム
+old_tmux_config="${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$selected.yml"
+new_tmux_config="${XDG_CONFIG_HOME:-$HOME/.config}/tmuxinator/$repo_name.yml"
+
+if [ -f "$old_tmux_config" ]; then
   echo "🔧 Updating tmuxinator configuration..."
-  sed -i.bak "s|root: .*|root: $github_path|" "$tmux_config"
-  rm "$tmux_config.bak"
+  # パスを更新
+  sed -i.bak "s|root: .*|root: $github_path|" "$old_tmux_config"
+  rm "$old_tmux_config.bak"
+  
+  # リポジトリ名が変更された場合、設定ファイル名もリネーム
+  if [ "$selected" != "$repo_name" ]; then
+    echo "🔧 Renaming tmuxinator config from '$selected.yml' to '$repo_name.yml'..."
+    mv "$old_tmux_config" "$new_tmux_config"
+    tmux_config="$new_tmux_config"
+  else
+    tmux_config="$old_tmux_config"
+  fi
+else
+  tmux_config="$new_tmux_config"
 fi
 
 echo "✅ Repository published to GitHub: $github_url"
 echo "📁 Project moved to: $github_path"
-echo "🔧 Tmuxinator config updated"
+echo "🔧 Tmuxinator config updated: $tmux_config"
 echo "🔗 You can now use 'mise enter' to work on this project"
 ''']
 
