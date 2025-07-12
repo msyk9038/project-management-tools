@@ -647,6 +647,16 @@ echo "🚀 To start working on this project, run:"
 echo "   mise enter"
 ''']
 
+# tmuxinator設定ファイルの存在チェック・再生成
+# - 全プロジェクトのtmuxinator設定ファイル存在確認
+# - 欠落している設定ファイルを一覧表示
+# - 選択的または一括でtmuxinator設定を生成
+# - テンプレートベースの自動生成
+[tasks.fix-tmux]
+description = "Check and fix tmuxinator config files for all projects"
+shell = "bash -lc"
+run = ["./scripts/fix-tmux.sh"]
+
 # 既存プロジェクトへのエントリ
 # - ghq管理下の全プロジェクトを表示（local/、github.com/両方含む）
 # - 選択したプロジェクトのtmuxinatorセッション開始

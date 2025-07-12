@@ -37,6 +37,7 @@ log_error() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_MISE_TOML="$SCRIPT_DIR/src/.mise.toml"
 SOURCE_TEMPLATES_DIR="$SCRIPT_DIR/src/templates"
+SOURCE_SCRIPTS_DIR="$SCRIPT_DIR/src/scripts"
 
 # 必要なソフトウェアのリスト
 REQUIRED_SOFTWARE=(
@@ -150,6 +151,7 @@ fi
 
 TARGET_MISE_TOML="$GHQ_ROOT/.mise.toml"
 TARGET_TEMPLATES_DIR="$GHQ_ROOT/templates"
+TARGET_SCRIPTS_DIR="$GHQ_ROOT/scripts"
 
 echo "🚀 Project Management Tools Setup"
 echo "=================================="
@@ -179,6 +181,12 @@ if [ -d "$TARGET_TEMPLATES_DIR" ]; then
     log_success "Backup created: $TARGET_TEMPLATES_DIR.backup.$(date +%Y%m%d_%H%M%S)"
 fi
 
+if [ -d "$TARGET_SCRIPTS_DIR" ]; then
+    log_warning "Existing scripts directory found. Creating backup..."
+    mv "$TARGET_SCRIPTS_DIR" "$TARGET_SCRIPTS_DIR.backup.$(date +%Y%m%d_%H%M%S)"
+    log_success "Backup created: $TARGET_SCRIPTS_DIR.backup.$(date +%Y%m%d_%H%M%S)"
+fi
+
 # .mise.toml をコピー
 log_info "Copying .mise.toml..."
 if [ -f "$SOURCE_MISE_TOML" ]; then
@@ -199,10 +207,21 @@ else
     exit 1
 fi
 
+# scripts ディレクトリをコピー
+log_info "Copying scripts directory..."
+if [ -d "$SOURCE_SCRIPTS_DIR" ]; then
+    cp -r "$SOURCE_SCRIPTS_DIR" "$TARGET_SCRIPTS_DIR"
+    log_success "Scripts directory copied successfully"
+else
+    log_error "Source scripts directory not found: $SOURCE_SCRIPTS_DIR"
+    exit 1
+fi
+
 # パーミッション設定
 log_info "Setting permissions..."
 chmod 644 "$TARGET_MISE_TOML"
 find "$TARGET_TEMPLATES_DIR" -type f -exec chmod 644 {} \;
+find "$TARGET_SCRIPTS_DIR" -type f -name "*.sh" -exec chmod +x {} \;
 # launch.shに実行権限を付与
 if [ -f "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh" ]; then
     chmod +x "$TARGET_TEMPLATES_DIR/.devcontainer/launch.sh"
